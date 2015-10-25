@@ -1,0 +1,94 @@
+---
+title: "Project Writing MachineLearning"
+output: html_document
+---
+
+Installing and loading of packages for the analysis
+
+```{install.packages("caret")
+install.packages("randomForest")
+install.packages("rpart")
+install.packages("ggplot2")
+install.packages("lattice")
+library(caret)
+library(randomForest)
+library(rpart)
+library(ggplot2)
+library(lattice)
+library(rpart.plot)}
+
+```
+Setting the overall seed for reproduceability
+```{set.seed(1234)}
+```
+
+After saving training and test data sets into my working directory
+Some missing values are coded as string "#DIV/0!" or "" or "NA" - these will be  changed to NA.
+Has been notice that both data sets contain columns with all missing values - , so it's necesary to delete this.
+
+Loading the training data set into my R session replacing all missing with "NA"
+```{setentrenamiento <- read.csv("C:/Users/Evelyn/Documents/Data Science/Machine Learning/project/pml-training.csv", na.strings=c("NA","#DIV/0!", ""))}
+```
+Loading the testing data set 
+```{setprueba <- read.csv("C:/Users/Evelyn/Documents/Data Science/Machine Learning/project/pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))}
+```
+Check dimensions for number of variables and number of observations
+```{}
+dim(setentrenamiento)
+dim(setprueba)
+```
+Delete columns with all missing values
+```{setentrenamiento<-setentrenamiento[,colSums(is.na(setentrenamiento)) == 0]
+setprueba <-setprueba[,colSums(is.na(setprueba)) == 0]}
+```
+Some variables are irrelevant to our current project: user_name, raw_timestamp_part_1, raw_timestamp_part_,2 cvtd_timestamp, new_window, and  num_window (columns 1 to 7). We can delete these variables.
+```{setentrenamiento   <-setentrenamiento[,-c(1:7)]
+setprueba <-setprueba[,-c(1:7)]}
+```
+Partitioning the training data set to allow cross-validation
+
+In order to perform cross-validation, the training data set is partionned into 2 sets: subTraining (80%) and subTest (20%).
+This will be performed using random subsampling without replacement.
+
+```{subsamples <- createDataPartition(y=setentrenamiento$classe, p=0.80, list=FALSE)
+subEntrenamiento <- setentrenamiento[subsamples, ]  
+subPrueba <- setentrenamiento[-subsamples, ]
+}
+dim(subEntrenamiento)  
+dim(subPrueba)  
+head(subEntrenamiento)  
+head(subPrueba)
+```
+A look at the Data
+
+The variable “classe” contains 5 levels: A, B, C, D and E. 
+
+```{}
+table(subEntrenamiento$classe)  
+table(subPrueba$classe)
+```
+Level A is the most frequent with 4464 occurrences while level D is the least frequent with about 2573 occurrences.
+
+Prediction model: Using Random Forest
+
+```{model1 <- randomForest(classe ~. , data=subEntrenamiento, method="class")}
+```
+Predicting:
+```{prediction <- predict(model1, subPrueba, type = "class")}
+```
+Test results on subTesting data set:
+```{}
+confusionMatrix(prediction, subPrueba$classe)
+```
+Decision
+
+The accuracy for Random Forest model was 0.9931 (95% CI: (0.99, 0.9955)). In consecuence, the accuracy of the model is 0.9931. The expected out-of-sample error is estimated at 0.005, or 0.5%. The expected out-of-sample error is calculated as 1 - accuracy for predictions made against the cross-validation set. Our Test data set comprises 20 cases. With an accuracy above 99% on our cross-validation data, we can expect that very few, or none, of the test samples will be missclassified.
+
+Submission
+
+Predict outcome levels on the original Testing data set using Random Forest algorithm
+
+```{predictprueba <- predict(model1, setprueba, type="class")
+}  
+predictprueba
+```
